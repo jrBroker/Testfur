@@ -1,0 +1,495 @@
+import React, { useState, useEffect } from 'react';
+import { Calendar, Activity, TrendingUp, Award, Users, User, Target, BarChart3, Dumbbell, Flame, Clock, ChevronRight, Plus, Check, X, Menu, LogOut, Settings, Camera, Share2 } from 'lucide-react';
+
+const FitnessTracker = () => {
+  // State Management
+  const [currentUser, setCurrentUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [showLogin, setShowLogin] = useState(true);
+  const [activeView, setActiveView] = useState('dashboard');
+  const [selectedWorkout, setSelectedWorkout] = useState(null);
+  const [workoutHistory, setWorkoutHistory] = useState([]);
+  const [achievements, setAchievements] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Form States
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [registerForm, setRegisterForm] = useState({ 
+    username: '', 
+    password: '', 
+    email: '', 
+    age: '', 
+    weight: '', 
+    height: '' 
+  });
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  // Greg Plitt MFT28 Workout Plan
+  const workoutPlans = {
+    beginner: {
+      name: "MFT Ignition",
+      weeks: 4,
+      schedule: {
+        monday: { name: "Chest Focus", exercises: [
+          { name: "Push-ups", sets: 3, reps: "10-15", rest: "60s" },
+          { name: "Incline Push-ups", sets: 3, reps: "10-12", rest: "60s" },
+          { name: "Diamond Push-ups", sets: 2, reps: "8-10", rest: "90s" },
+          { name: "Wide-Grip Push-ups", sets: 3, reps: "12-15", rest: "60s" }
+        ]},
+        tuesday: { name: "Back Attack", exercises: [
+          { name: "Pull-ups (Assisted)", sets: 3, reps: "5-8", rest: "90s" },
+          { name: "Inverted Rows", sets: 3, reps: "10-12", rest: "60s" },
+          { name: "Superman", sets: 3, reps: "15-20", rest: "45s" },
+          { name: "Band Pull-aparts", sets: 3, reps: "20", rest: "45s" }
+        ]},
+        wednesday: { name: "Rest Day", exercises: [] },
+        thursday: { name: "Shoulder Sculpt", exercises: [
+          { name: "Pike Push-ups", sets: 3, reps: "8-10", rest: "60s" },
+          { name: "Lateral Raises (Light)", sets: 3, reps: "15-20", rest: "45s" },
+          { name: "Front Raises", sets: 3, reps: "12-15", rest: "45s" },
+          { name: "Shoulder Circles", sets: 2, reps: "20 each", rest: "30s" }
+        ]},
+        friday: { name: "Arms Arsenal", exercises: [
+          { name: "Close-Grip Push-ups", sets: 3, reps: "10-12", rest: "60s" },
+          { name: "Chin-ups", sets: 3, reps: "5-8", rest: "90s" },
+          { name: "Tricep Dips", sets: 3, reps: "8-10", rest: "60s" },
+          { name: "Bicep Curls", sets: 3, reps: "12-15", rest: "45s" }
+        ]},
+        saturday: { name: "Leg Foundation", exercises: [
+          { name: "Bodyweight Squats", sets: 4, reps: "15-20", rest: "60s" },
+          { name: "Lunges", sets: 3, reps: "10 each", rest: "60s" },
+          { name: "Jump Squats", sets: 3, reps: "10-12", rest: "90s" },
+          { name: "Calf Raises", sets: 3, reps: "20-25", rest: "45s" }
+        ]},
+        sunday: { name: "Active Recovery", exercises: [] }
+      }
+    },
+    intermediate: {
+      name: "MFT Warrior",
+      weeks: 4,
+      schedule: {
+        monday: { name: "Chest Dominance", exercises: [
+          { name: "Barbell Bench Press", sets: 4, reps: "8-10", rest: "90s" },
+          { name: "Incline Dumbbell Press", sets: 4, reps: "10-12", rest: "75s" },
+          { name: "Cable Flyes", sets: 3, reps: "12-15", rest: "60s" },
+          { name: "Push-up Burnout", sets: 1, reps: "To Failure", rest: "0s" }
+        ]},
+        tuesday: { name: "Back Demolition", exercises: [
+          { name: "Deadlifts", sets: 4, reps: "6-8", rest: "120s" },
+          { name: "Bent-Over Rows", sets: 4, reps: "8-10", rest: "90s" },
+          { name: "Lat Pulldowns", sets: 3, reps: "12-15", rest: "60s" },
+          { name: "T-Bar Rows", sets: 3, reps: "10-12", rest: "75s" }
+        ]},
+        wednesday: { name: "Shoulder Shred", exercises: [
+          { name: "Military Press", sets: 4, reps: "8-10", rest: "90s" },
+          { name: "Arnold Press", sets: 3, reps: "10-12", rest: "75s" },
+          { name: "Lateral Raise Giant Set", sets: 3, reps: "10/10/10", rest: "90s" },
+          { name: "Face Pulls", sets: 3, reps: "15-20", rest: "60s" }
+        ]},
+        thursday: { name: "Arms War", exercises: [
+          { name: "Barbell Curls", sets: 4, reps: "8-10", rest: "75s" },
+          { name: "Close-Grip Bench", sets: 4, reps: "8-10", rest: "75s" },
+          { name: "Hammer Curls", sets: 3, reps: "12-15", rest: "60s" },
+          { name: "Overhead Extension", sets: 3, reps: "12-15", rest: "60s" }
+        ]},
+        friday: { name: "Legit Legs", exercises: [
+          { name: "Squats", sets: 4, reps: "8-10", rest: "120s" },
+          { name: "Romanian Deadlifts", sets: 4, reps: "10-12", rest: "90s" },
+          { name: "Leg Press", sets: 3, reps: "15-20", rest: "90s" },
+          { name: "Walking Lunges", sets: 3, reps: "12 each", rest: "75s" }
+        ]},
+        saturday: { name: "Core & Cardio", exercises: [
+          { name: "Plank Circuit", sets: 3, reps: "60s each", rest: "30s" },
+          { name: "Russian Twists", sets: 3, reps: "30", rest: "45s" },
+          { name: "Mountain Climbers", sets: 3, reps: "20", rest: "45s" },
+          { name: "Battle Ropes", sets: 5, reps: "30s", rest: "30s" }
+        ]},
+        sunday: { name: "Rest Day", exercises: [] }
+      }
+    },
+    advanced: {
+      name: "MFT28 Elite",
+      weeks: 4,
+      schedule: {
+        monday: { 
+          name: "Chest Dominance - Double Session", 
+          morning: [
+            { name: "Barbell Bench Press", sets: 5, reps: "5-8", rest: "120s" },
+            { name: "Incline Barbell Press", sets: 4, reps: "6-8", rest: "90s" },
+            { name: "Weighted Dips", sets: 4, reps: "8-10", rest: "90s" },
+            { name: "Dumbbell Flyes", sets: 3, reps: "10-12", rest: "75s" }
+          ],
+          evening: [
+            { name: "Light Bench Press", sets: 3, reps: "25-30", rest: "45s" },
+            { name: "Cable Crossovers", sets: 3, reps: "25-30", rest: "30s" },
+            { name: "Push-up Variations", sets: 3, reps: "To Failure", rest: "60s" }
+          ]
+        },
+        tuesday: { 
+          name: "Back Demolition - Double Session",
+          morning: [
+            { name: "Rack Pulls", sets: 5, reps: "5-6", rest: "120s" },
+            { name: "Heavy T-Bar Rows", sets: 4, reps: "6-8", rest: "90s" },
+            { name: "Weighted Pull-ups", sets: 4, reps: "6-10", rest: "90s" },
+            { name: "Cable Rows", sets: 3, reps: "10-12", rest: "75s" }
+          ],
+          evening: [
+            { name: "High Rep Lat Pulldowns", sets: 3, reps: "25-30", rest: "45s" },
+            { name: "Light Cable Rows", sets: 3, reps: "25-30", rest: "30s" },
+            { name: "Back Extensions", sets: 3, reps: "20-25", rest: "45s" }
+          ]
+        },
+        wednesday: { name: "Active Recovery", exercises: [
+          { name: "Yoga Flow", sets: 1, reps: "30 min", rest: "0s" },
+          { name: "Light Swimming", sets: 1, reps: "20 min", rest: "0s" },
+          { name: "Foam Rolling", sets: 1, reps: "15 min", rest: "0s" }
+        ]},
+        thursday: { 
+          name: "Shoulder Shred - Double Session",
+          morning: [
+            { name: "Standing Military Press", sets: 5, reps: "5-8", rest: "120s" },
+            { name: "Dumbbell Shoulder Press", sets: 4, reps: "8-10", rest: "90s" },
+            { name: "Upright Rows", sets: 4, reps: "10-12", rest: "75s" },
+            { name: "Heavy Shrugs", sets: 3, reps: "8-10", rest: "75s" }
+          ],
+          evening: [
+            { name: "Light Lateral Raises", sets: 4, reps: "25-30", rest: "30s" },
+            { name: "Front Raise Circuit", sets: 3, reps: "20 each", rest: "45s" },
+            { name: "Band Work", sets: 3, reps: "30", rest: "30s" }
+          ]
+        },
+        friday: { 
+          name: "Arms War - Double Session",
+          morning: [
+            { name: "Close-Grip Bench Press", sets: 4, reps: "6-8", rest: "90s" },
+            { name: "Preacher Curls", sets: 4, reps: "8-10", rest: "75s" },
+            { name: "Weighted Dips", sets: 3, reps: "8-12", rest: "75s" },
+            { name: "Barbell Curls", sets: 3, reps: "8-10", rest: "75s" }
+          ],
+          evening: [
+            { name: "Cable Tricep Work", sets: 4, reps: "25-30", rest: "30s" },
+            { name: "Cable Curls", sets: 4, reps: "25-30", rest: "30s" },
+            { name: "21s", sets: 2, reps: "21", rest: "60s" }
+          ]
+        },
+        saturday: { 
+          name: "Legit Legs - Double Session",
+          morning: [
+            { name: "Back Squats", sets: 5, reps: "5-8", rest: "150s" },
+            { name: "Front Squats", sets: 4, reps: "8-10", rest: "120s" },
+            { name: "Stiff-Leg Deadlifts", sets: 4, reps: "8-10", rest: "90s" },
+            { name: "Leg Press", sets: 3, reps: "12-15", rest: "90s" }
+          ],
+          evening: [
+            { name: "High Rep Leg Extensions", sets: 3, reps: "25-30", rest: "45s" },
+            { name: "High Rep Leg Curls", sets: 3, reps: "25-30", rest: "45s" },
+            { name: "Walking Lunges", sets: 3, reps: "20 each", rest: "60s" },
+            { name: "Calf Raises", sets: 4, reps: "25-30", rest: "30s" }
+          ]
+        },
+        sunday: { name: "Rest Day", exercises: [] }
+      }
+    }
+  };
+
+  // Motivational Quotes (Greg Plitt Style)
+  const motivationalQuotes = [
+    "The clock is ticking. Are you becoming the person you want to be?",
+    "Opportunities don't come to those who wait. They come to those who attack.",
+    "Your mind is the battlefield. Win there first, and the body will follow.",
+    "Heroes are made in the hour of defeat. Success is, therefore, well described as a series of glorious defeats.",
+    "The hardest things in life are the things worth doing.",
+    "Wake up with a plan. Attack with purpose. Sleep with satisfaction.",
+    "In life, it's not the genetic guy who wins or the guy with the most potential who wins; it's the person with the greatest perseverance who wins.",
+    "Get comfortable with being uncomfortable.",
+    "The difference between a winner and a loser - they both failed, but the winner gets up and does it again.",
+    "You are what you do repeatedly. Excellence, then, is not an act, but a habit."
+  ];
+
+  const [dailyQuote, setDailyQuote] = useState(motivationalQuotes[0]);
+
+  // Initialize
+  useEffect(() => {
+    // Set daily quote
+    const quoteIndex = new Date().getDate() % motivationalQuotes.length;
+    setDailyQuote(motivationalQuotes[quoteIndex]);
+  }, []);
+
+  // Authentication Functions
+  const handleLogin = () => {
+    const user = users.find(u => 
+      u.username === loginForm.username && u.password === loginForm.password
+    );
+    
+    if (user) {
+      setCurrentUser(user);
+      setShowLogin(false);
+      loadUserData(user.id);
+    } else {
+      alert('Invalid credentials!');
+    }
+  };
+
+  const handleRegister = () => {
+    if (users.find(u => u.username === registerForm.username)) {
+      alert('Username already exists!');
+      return;
+    }
+
+    const newUser = {
+      ...registerForm,
+      id: Date.now(),
+      joinDate: new Date().toISOString(),
+      level: 'beginner',
+      stats: {
+        workoutsCompleted: 0,
+        currentStreak: 0,
+        totalWeight: 0,
+        achievements: []
+      }
+    };
+
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    
+    setCurrentUser(newUser);
+    setShowLogin(false);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setShowLogin(true);
+    setActiveView('dashboard');
+  };
+
+  // Load User Data
+  const loadUserData = (userId) => {
+    // In a real app, this would load from a database
+    setWorkoutHistory([]);
+    setAchievements([]);
+  };
+
+  // Save Workout
+  const saveWorkout = (workout) => {
+    const newWorkout = {
+      ...workout,
+      id: Date.now(),
+      date: new Date().toISOString(),
+      userId: currentUser.id
+    };
+
+    const updatedHistory = [...workoutHistory, newWorkout];
+    setWorkoutHistory(updatedHistory);
+
+    // Update user stats
+    const updatedUser = {
+      ...currentUser,
+      stats: {
+        ...currentUser.stats,
+        workoutsCompleted: currentUser.stats.workoutsCompleted + 1,
+        totalWeight: currentUser.stats.totalWeight + workout.totalWeight
+      }
+    };
+
+    setCurrentUser(updatedUser);
+    
+    // Check for achievements
+    checkAchievements(updatedUser);
+  };
+
+  // Achievement System
+  const checkAchievements = (user) => {
+    const newAchievements = [];
+    
+    if (user.stats.workoutsCompleted === 1) {
+      newAchievements.push({ 
+        id: 'first_workout', 
+        name: 'First Blood', 
+        description: 'Complete your first workout',
+        icon: '🏆',
+        date: new Date().toISOString()
+      });
+    }
+    
+    if (user.stats.workoutsCompleted === 7) {
+      newAchievements.push({ 
+        id: 'week_warrior', 
+        name: 'Week Warrior', 
+        description: 'Complete 7 workouts',
+        icon: '🎖️',
+        date: new Date().toISOString()
+      });
+    }
+    
+    if (user.stats.workoutsCompleted === 28) {
+      newAchievements.push({ 
+        id: 'mft28_complete', 
+        name: 'MFT28 Elite', 
+        description: 'Complete the full MFT28 program',
+        icon: '🏅',
+        date: new Date().toISOString()
+      });
+    }
+
+    if (newAchievements.length > 0) {
+      const allAchievements = [...achievements, ...newAchievements];
+      setAchievements(allAchievements);
+    }
+  };
+
+  // Workout Tracking Component
+  const WorkoutTracker = ({ workout }) => {
+    const [exerciseData, setExerciseData] = useState({});
+    const [isTracking, setIsTracking] = useState(false);
+    const [completedExercises, setCompletedExercises] = useState([]);
+
+    const handleExerciseUpdate = (exerciseName, setIndex, weight, reps) => {
+      setExerciseData({
+        ...exerciseData,
+        [exerciseName]: {
+          ...exerciseData[exerciseName],
+          [`set${setIndex}`]: { weight, reps }
+        }
+      });
+    };
+
+    const completeWorkout = () => {
+      const totalWeight = Object.values(exerciseData).reduce((total, exercise) => {
+        return total + Object.values(exercise).reduce((exTotal, set) => {
+          return exTotal + (set.weight * set.reps);
+        }, 0);
+      }, 0);
+
+      saveWorkout({
+        name: workout.name,
+        exercises: exerciseData,
+        totalWeight,
+        duration: Date.now() - startTime
+      });
+
+      setIsTracking(false);
+      alert('Workout completed! Great job, warrior!');
+    };
+
+    const [startTime] = useState(Date.now());
+
+    return (
+      <div className="bg-gray-800 rounded-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-2xl font-bold text-orange-500">{workout.name}</h3>
+          {!isTracking ? (
+            <button
+              onClick={() => setIsTracking(true)}
+              className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition-all transform hover:scale-105"
+            >
+              Start Workout
+            </button>
+          ) : (
+            <button
+              onClick={completeWorkout}
+              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-all"
+            >
+              Complete Workout
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          {(workout.exercises || workout.morning || []).map((exercise, index) => (
+            <div key={index} className="bg-gray-700 rounded-lg p-4">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-lg font-semibold text-white">{exercise.name}</h4>
+                <span className="text-sm text-gray-400">
+                  {exercise.sets} sets × {exercise.reps} reps
+                </span>
+              </div>
+
+              {isTracking && (
+                <div className="grid grid-cols-4 gap-2">
+                  {[...Array(parseInt(exercise.sets))].map((_, setIndex) => (
+                    <div key={setIndex} className="text-center">
+                      <p className="text-xs text-gray-400 mb-1">Set {setIndex + 1}</p>
+                      <input
+                        type="number"
+                        placeholder="Weight"
+                        className="w-full bg-gray-600 text-white rounded px-2 py-1 mb-1 text-sm"
+                        onChange={(e) => handleExerciseUpdate(
+                          exercise.name, 
+                          setIndex, 
+                          parseFloat(e.target.value) || 0,
+                          exerciseData[exercise.name]?.[`set${setIndex}`]?.reps || parseInt(exercise.reps)
+                        )}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Reps"
+                        className="w-full bg-gray-600 text-white rounded px-2 py-1 text-sm"
+                        onChange={(e) => handleExerciseUpdate(
+                          exercise.name, 
+                          setIndex,
+                          exerciseData[exercise.name]?.[`set${setIndex}`]?.weight || 0,
+                          parseInt(e.target.value) || 0
+                        )}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Progress Chart Component
+  const ProgressChart = () => {
+    const last7Days = workoutHistory.slice(-7);
+    const maxWeight = Math.max(...last7Days.map(w => w.totalWeight || 0), 100);
+
+    return (
+      <div className="bg-gray-800 rounded-lg p-6">
+        <h3 className="text-xl font-bold text-orange-500 mb-4">Weekly Progress</h3>
+        <div className="h-48 flex items-end space-x-2">
+          {last7Days.map((workout, index) => (
+            <div key={index} className="flex-1 bg-gray-700 rounded-t relative group">
+              <div 
+                className="bg-gradient-to-t from-orange-600 to-orange-400 rounded-t transition-all duration-500"
+                style={{ 
+                  height: `${(workout.totalWeight / maxWeight) * 100}%`,
+                  minHeight: '20px'
+                }}
+              >
+                <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  {workout.totalWeight}kg
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 text-center mt-2">
+                {new Date(workout.date).toLocaleDateString('en', { weekday: 'short' })}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Login/Register Screen
+  if (showLogin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-4">
+        <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all hover:scale-105">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-orange-500 mb-2">MFT ELITE</h1>
+            <p className="text-gray-400">Military Fitness Training System</p>
+            <p className="text-sm text-gray-500 mt-2 italic">"{dailyQuote}"</p>
+          </div>
+
+          {!isRegistering ? (
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Username"
+                value={loginForm.username}
+                onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
+                className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:r
